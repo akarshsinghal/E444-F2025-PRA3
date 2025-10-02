@@ -81,3 +81,25 @@ def test_delete_message(client):
     rv = client.get('/delete/1')
     data = json.loads(rv.data)
     assert data["status"] == 1
+
+def test_search(client):
+    """Access /search/ with a query parameter after adding a post"""
+    # Log in and add a post
+    login(client, app.config["USERNAME"], app.config["PASSWORD"])
+    rv = client.post(
+        "/add",
+        data=dict(title="Hello World", text="Some content"),
+        follow_redirects=True,
+    )
+    assert b"New entry was successfully posted" in rv.data
+
+    # Search for the post
+    rv = client.get("/search/", query_string={"query": "Hello"})
+    assert rv.status_code == 200
+    assert b"Hello World" in rv.data
+    assert b"Some content" in rv.data
+
+    # Search for a non-matching query
+    rv = client.get("/search/", query_string={"query": "Nonexistent"})
+    assert rv.status_code == 200
+    assert b"Hello World" not in rv.data
